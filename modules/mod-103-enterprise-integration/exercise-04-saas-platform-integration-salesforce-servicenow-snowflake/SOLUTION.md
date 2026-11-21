@@ -115,8 +115,8 @@ PATCH /services/data/v62.0/jobs/ingest/{jobId}         { "state": "UploadComplet
 - Replay with a monotonic Replay ID — Lantern persists the Replay ID
   after each successful downstream commit; on reconnect, resumes from
   `replay_id - 1` to guarantee at-least-once.
-- Lantern's consumer must be idempotent (keyed by Salesforce record Id
-  + ChangeEventHeader.commitNumber).
+- Lantern's consumer must be idempotent (keyed by Salesforce record
+  Id plus ChangeEventHeader.commitNumber).
 
 ### 2.2 ServiceNow
 
