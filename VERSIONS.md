@@ -6,3 +6,4 @@
 |---|---|---|---|
 | 2026-11-20 | `fill-mod-102-customer-discovery-and-pilot-scoping-solutions` | `mod-102-customer-discovery-and-pilot-scoping` | Fill mod-102-customer-discovery-and-pilot-scoping module exercise solutions |
 | 2026-11-20 | `fill-mod-103-enterprise-integration-solutions` | `mod-103-enterprise-integration` | Fill mod-103-enterprise-integration module exercise solutions |
+| 2026-11-21 | `fill-mod-104-llm-app-in-customer-envs-solutions` | `mod-104-llm-app-in-customer-envs` | Fill mod-104-llm-app-in-customer-envs module exercise solutions |
