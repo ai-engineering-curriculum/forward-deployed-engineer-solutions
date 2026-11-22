@@ -106,6 +106,15 @@ Store ACLs as keyword fields, filter with a `bool` query, never at the
 app.
 
 ```jsonc
+// Build one list, bind it to both branches. Never hand-write two arrays —
+// any drift silently converts deny-overrides-allow into allow-wins for
+// the dropped principal.
+//
+//   <caller_principals> = [caller.principal] + caller.groups
+//                       = ["user:alice@acme.com",
+//                          "group:finance-us",
+//                          "group:all-employees"]
+//
 // Query
 {
   "query": {
@@ -121,18 +130,13 @@ app.
       "filter": [
         { "term":  { "tenant_id": "<tenant>" } },
         { "term":  { "residency": "<caller_residency>" } },
-        { "terms": { "allow_principals":
-            ["user:alice@acme.com", "group:finance-us", "group:all-employees"]
-        }}
+        { "terms": { "allow_principals": "<caller_principals>" } }
       ],
       "must_not": [
-        // Deny filter MUST use the caller's complete principal set — the
-        // identical list passed to `allow_principals` above. If a group the
-        // caller belongs to is omitted here, a chunk that denies that group
-        // can still match and leak downstream.
-        { "terms": { "deny_principals":
-            ["user:alice@acme.com", "group:finance-us", "group:all-employees"]
-        }}
+        // Same `<caller_principals>` binding as the allow branch above.
+        // If a group the caller belongs to is dropped here, a chunk that
+        // denies that group can still match and leak downstream.
+        { "terms": { "deny_principals":  "<caller_principals>" } }
       ]
     }
   }
