@@ -105,8 +105,8 @@ The prompt-to-UI contract is a structured answer object:
 ### 2.2 Rendering rules (UI)
 
 - Each citation chip shows `[n]` where `n` is a stable, per-answer
-  index. Hover reveals title + source system + last-modified date
-  + a "stale" chip if the source is past the policy threshold.
+  index. Hover reveals title, source system, last-modified date,
+  and a "stale" chip if the source is past the policy threshold.
 - Click opens the `source_url` in a new tab in the **source system**,
   under the user's identity, so the source system (SharePoint,
   Confluence, Drive) enforces its own ACL at open time. This is
