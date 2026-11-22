@@ -126,6 +126,10 @@ app.
         }}
       ],
       "must_not": [
+        // Deny filter MUST use the caller's complete principal set — the
+        // identical list passed to `allow_principals` above. If a group the
+        // caller belongs to is omitted here, a chunk that denies that group
+        // can still match and leak downstream.
         { "terms": { "deny_principals":
             ["user:alice@acme.com", "group:finance-us", "group:all-employees"]
         }}
@@ -347,6 +351,12 @@ Design:
   chunk out, even if the principal would otherwise match.
 - **Denylists dominate allowlists.** A chunk with a principal in both
   `allow_principals` and `deny_principals` is denied.
+- **Deny filter uses the caller's complete principal set.** Both the
+  allow branch and the deny branch of the query evaluate against the
+  same list — the caller's user principal plus every resolved group.
+  Dropping a group from the deny branch (even "obviously broad" ones
+  like `group:all-employees`) silently converts a deny-overrides-allow
+  policy into an allow-wins policy for that group.
 - **ACL filter is logged, not embedded in the message to the LLM.**
   Never put raw principal lists or ACL JSON into the prompt.
 
