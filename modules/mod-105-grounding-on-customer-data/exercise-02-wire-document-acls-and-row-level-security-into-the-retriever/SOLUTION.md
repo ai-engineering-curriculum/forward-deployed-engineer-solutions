@@ -127,7 +127,7 @@ app.
       ],
       "must_not": [
         { "terms": { "deny_principals":
-            ["user:alice@acme.com", "group:finance-us"]
+            ["user:alice@acme.com", "group:finance-us", "group:all-employees"]
         }}
       ]
     }

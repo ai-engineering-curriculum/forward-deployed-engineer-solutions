@@ -194,8 +194,19 @@ from typing import Dict, List
 
 def score(item: Dict, pipeline_output: Dict) -> Dict:
     expected = item["expected"]
-    cited    = {s["doc_id"] for s in pipeline_output.get("sources", [])}
-    text     = pipeline_output.get("answer", "").lower()
+    # Cited = only sources referenced by at least one claim, not every
+    # retrieved source. `claims[].citations` holds source ids ("c1",
+    # "c2", ...) that resolve to `sources[].id → doc_id`. Scoring on
+    # `sources` alone would pass must_cite_any whenever the required
+    # doc was merely retrieved, and fail must_not_cite on unused
+    # retrieval candidates.
+    source_to_doc = {s["id"]: s["doc_id"]
+                     for s in pipeline_output.get("sources", [])}
+    cited_ids    = {cid for claim in pipeline_output.get("claims", [])
+                        for cid in claim.get("citations", [])}
+    cited        = {source_to_doc[cid] for cid in cited_ids
+                                        if cid in source_to_doc}
+    text         = pipeline_output.get("answer", "").lower()
 
     checks: List[Dict] = []
 

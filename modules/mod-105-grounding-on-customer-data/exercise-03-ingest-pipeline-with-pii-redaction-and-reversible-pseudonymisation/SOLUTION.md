@@ -151,12 +151,24 @@ create table token_vault (
     entity_type    text not null,
     ciphertext     bytea not null,    -- envelope-encrypted original
     created_at     timestamptz not null default now(),
-    source_system  text not null,
-    doc_id         text not null,
     primary key (tenant_id, token_id)
 );
 
-create index on token_vault (tenant_id, source_system, doc_id);
+-- A token can appear in many documents within a tenant. Track every
+-- (source_system, doc_id) that references the token so document-level
+-- deletes only drop the vault row when the last reference is gone.
+create table token_vault_refs (
+    tenant_id      text not null,
+    token_id       text not null,
+    source_system  text not null,
+    doc_id         text not null,
+    first_seen_at  timestamptz not null default now(),
+    primary key (tenant_id, token_id, source_system, doc_id),
+    foreign key (tenant_id, token_id)
+        references token_vault (tenant_id, token_id) on delete cascade
+);
+
+create index on token_vault_refs (tenant_id, source_system, doc_id);
 ```
 
 Encryption:
@@ -236,6 +248,9 @@ def pseudonymise(text: str, tenant: str, doc_id: str, source: str
             "token_id":      tid,
             "entity_type":   s.entity_type,
             "cleartext":     cleartext,  # vault writer envelope-encrypts
+            # Reference back to this doc; the writer upserts the vault
+            # row and inserts a (tenant, token, source, doc) ref row so
+            # the same token can be associated with many documents.
             "source_system": source,
             "doc_id":        doc_id,
         })
@@ -293,9 +308,12 @@ leaked into a log" from becoming "cleartext leaked into a log."
 Three operations the pipeline must support cleanly:
 
 1. **Document delete (source).** Delete the chunks (exercise-02
-   tombstone), delete the vault rows for `(tenant, source, doc_id)`.
-   Order matters: tombstone first (new queries stop seeing), then
-   purge vault.
+   tombstone), delete the `token_vault_refs` rows for
+   `(tenant, source, doc_id)`, then delete any `token_vault` rows
+   whose reference count has dropped to zero. Tokens shared with
+   another live document keep their vault row. Order matters:
+   tombstone first (new queries stop seeing), then purge refs, then
+   purge orphaned vault rows.
 2. **GDPR / data-subject erasure (per person).** Find all
    `token_vault` rows where the cleartext maps to the subject.
    Because the token id is HMAC-keyed with the tenant key, the
